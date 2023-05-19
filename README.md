@@ -1,4 +1,4 @@
-# Web Automation Script for Scheduled Exports
+# Web Automation Script for Scheduled .csv (pdf, img, etc.) Exports/Downloads
 
 This repository contains a Python script that uses Selenium WebDriver for automated website navigation and interaction. It's designed to log in to a website, navigate to a specific section, download a CSV file, process that CSV file, and schedule these tasks to run at specified times.
 
