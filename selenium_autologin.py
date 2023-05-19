@@ -8,104 +8,91 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
-def process_shipments(url, username, password, download_directory, path_to_chromedriver,
-                      login_username_selector, login_password_selector, login_button_selector, 
-                      drop_down_selector, submenu_selector, link_text,
-                      export_link_text, csv_filename, filter_conditions, sort_column):
-    
-    # Set up Chrome options
+def setup_driver(download_directory, path_to_chromedriver):
+    """Set up the WebDriver."""
+    # Initialize Chrome options
     chrome_options = webdriver.ChromeOptions()
-
-    # Define Chrome preferences
     chrome_options.add_experimental_option("prefs", {
-        # Set the default directory for downloaded files
         "download.default_directory": download_directory,
-
-        # Disable the prompt that asks for download confirmation
         "download.prompt_for_download": False,
-
-        # Instruct Chrome to use the new download directory instead of the default one
         "download.directory_upgrade": True
     })
-
-    # Define the ChromeDriver service
     service = Service(path_to_chromedriver)
+    # Initialize WebDriver with the designated ChromeDriver path and options
+    try:
+        return webdriver.Chrome(service=service, options=chrome_options)
+    except Exception as e:
+        print(f"Failed to set up WebDriver: {e}")
+        return None
 
-    # Start the WebDriver with the specified options
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+def login_to_website(driver, url, login_username_selector, login_password_selector, login_button_selector, username, password):
+    """Log into the website."""
+    try:
+        driver.get(url)
+        username_input = driver.find_element(By.CSS_SELECTOR, login_username_selector)
+        password_input = driver.find_element(By.CSS_SELECTOR, login_password_selector)
+        # Fill the login form and submit
+        username_input.send_keys(username)
+        password_input.send_keys(password)
+        driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
+    except Exception as e:
+        print(f"Failed to login: {e}")
 
-    # Navigate to the specified URL
-    driver.get(url)
+def navigate_to_exports(driver, drop_down_selector, submenu_selector, link_text):
+    """Navigate to exports."""
+    try:
+        time.sleep(5)
+        # Open the drop down menu
+        driver.find_element(By.CSS_SELECTOR, drop_down_selector).click()
+        time.sleep(5)
+        # Open the sub-menu
+        driver.find_element(By.CSS_SELECTOR, submenu_selector).click()
+        wait = WebDriverWait(driver, 10)
+        # Wait for the link to be clickable and click on it
+        pending_shipments_link = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, link_text)))
+        pending_shipments_link.click()
+        time.sleep(5)
+    except Exception as e:
+        print(f"Failed to navigate to exports: {e}")
 
-    # Log in with credentials
-    username_input = driver.find_element(By.CSS_SELECTOR, login_username_selector)
-    password_input = driver.find_element(By.CSS_SELECTOR, login_password_selector)
-    username_input.send_keys(username)
-    password_input.send_keys(password)
-    driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
+def export_to_csv(driver, export_link_text):
+    """Export to CSV."""
+    try:
+        # Find the CSV export link and click on it
+        driver.find_element(By.LINK_TEXT, export_link_text).click()
+        time.sleep(5)
+        driver.quit()
+    except Exception as e:
+        print(f"Failed to export to CSV: {e}")
 
-    # Wait for the new page to load
-    time.sleep(5)
+def process_csv_file(download_directory, csv_filename, filter_conditions, sort_column):
+    """Process the CSV file."""
+    try:
+        # Read the CSV file into a pandas DataFrame
+        data = pd.read_csv(os.path.join(download_directory, csv_filename))
+        # Filter the data according to the given conditions
+        for column, condition in filter_conditions.items():
+            data = data[condition(data[column])]
+        # Sort the data by the designated column
+        data = data.sort_values(by=sort_column)
+        # Save the processed data to a new CSV file
+        data.to_csv(os.path.join(download_directory, "processed_data.csv"), index=False)
+        # Remove the original downloaded CSV file
+        os.remove(os.path.join(download_directory, csv_filename))
+    except Exception as e:
+        print(f"Failed to process CSV file: {e}")
 
-    # Click on the dropdown menu
-    driver.find_element(By.CSS_SELECTOR, drop_down_selector).click()
-    time.sleep(5)
-
-    # Click on the submenu
-    driver.find_element(By.CSS_SELECTOR, submenu_selector).click()
-    wait = WebDriverWait(driver, 10)
-    pending_shipments_link = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, link_text)))
-    pending_shipments_link.click()
-
-    # Wait for the new page to load
-    time.sleep(5)
-
-    # Click on "Export to CSV"
-    driver.find_element(By.LINK_TEXT, export_link_text).click()
-    time.sleep(5)
-    driver.quit()
-
-    # Read the downloaded CSV file
-    data = pd.read_csv(os.path.join(download_directory, csv_filename))
-
-    # Apply the filters to the data, and save the results to a new variable.
-    # filter_conditions is a dictionary with column name as key and conditions as values
-    for column, condition in filter_conditions.items():
-        data = data[condition(data[column])]
-
-    # Sort by given column
-    data = data.sort_values(by=sort_column)
-
-    # Save the new CSV file
-    data.to_csv(os.path.join(download_directory, "extracted_data.csv"), index=False)
-
-    # Delete the original CSV file
-    os.remove(os.path.join(download_directory, csv_filename))
-
-# Add your arguments here
-url = "https://your_website.com"
-username = "your_username"
-password = "your_password"
-download_directory = r"path_to_your_directory"
-path_to_chromedriver = r'path_to_chromedriver.exe' 
-login_username_selector = "CSS_SELECTOR_TO_USERNAME_FIELD"
-login_password_selector = "CSS_SELECTOR_TO_PASSWORD_FIELD"
-login_button_selector = "CSS_SELECTOR_TO_LOGIN_BUTTON"
-drop_down_selector = "CSS_SELECTOR_TO_DROPDOWN"
-submenu_selector = "CSS_SELECTOR_TO_SUBMENU"
-link_text = "LINK_TEXT_TO_NAVIGATE_TO"
-export_link_text = "LINK_TEXT_TO_EXPORT_TO_CSV"
-csv_filename = "csv_file_to_be_processed.csv"
-
-# Update this dictionary as per your filter conditions.
-# The keys are column names and the values are lambda functions that describe the filter condition
-filter_conditions = {
-    'ColumnName1': lambda x: (x == "---"),
-    'ColumnName2': lambda x: (~x.str.startswith("UNK") & x.notna()),
-    # Add more filters as needed
-}
-
-sort_column = 'ColumnNameToSortBy'  # The name of the column by which to sort the data
+def process_shipments(url, username, password, download_directory, path_to_chromedriver,
+                      login_username_selector, login_password_selector, login_button_selector,
+                      drop_down_selector, submenu_selector, link_text,
+                      export_link_text, csv_filename, filter_conditions, sort_column):
+    """Process the shipments."""
+    driver = setup_driver(download_directory, path_to_chromedriver)
+    if driver is not None:
+        login_to_website(driver, url, login_username_selector, login_password_selector, login_button_selector, username, password)
+        navigate_to_exports(driver, drop_down_selector, submenu_selector, link_text)
+        export_to_csv(driver, export_link_text)
+        process_csv_file(download_directory, csv_filename, filter_conditions, sort_column)
 
 # Schedule the process_shipments function to run at 8 am, 12 pm, and 4 pm (16:00) *24 hour clock
 schedule.every().day.at("08:00").do(process_shipments, url, username, password, download_directory, path_to_chromedriver,
@@ -123,5 +110,10 @@ schedule.every().day.at("16:00").do(process_shipments, url, username, password, 
 
 # Run the scheduler in a loop
 while True:
-    schedule.run_pending()
+    try:
+        schedule.run_pending()
+    except Exception as e:
+        print(f"An error occurred during scheduled tasks: {e}")
+        break  # Or: continue, if you want the loop to keep running even if one task fails
     time.sleep(1)
+
