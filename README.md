@@ -63,16 +63,17 @@ To use the provided dummy HTML file as a reference:
 Please note that this script is for illustrative purposes only. It is important to respect the terms of service of any website you interact with. Always obtain necessary permissions before scraping a website. Respect privacy and confidentiality when handling collected data.
 
 ## Contributing
+
 We welcome contributions to this project! Please feel free to submit pull requests for new features or bug fixes. Before making large changes, it's a good idea to discuss them in an issue first.
 
 ## Reporting Issues
+
 If you find a bug or a problem with this script, please search our issue tracker to see if someone else has already reported it. If not, go ahead and create a new issue. Be sure to include as much detail as possible so that we can understand and reproduce the problem.
 
 ## Requesting Features
+
 We're always interested in suggestions for new features! Feel free to create an issue to describe your idea. We can't guarantee that we'll implement it, but we will certainly consider it.
 
 ## License
 
 MIT License.
-
-
